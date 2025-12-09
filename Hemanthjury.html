@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Recipe Calorie Calculator</title>
+  <style>
+    :root{
+      --green-600:#2e7d32;
+      --green-400:#66bb6a;
+      --green-50:#f1f8f3;
+      --bg:#ffffff;
+      --muted:#6b7280;
+      --card-shadow: 0 6px 18px rgba(16,24,40,0.06);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTl4sJWSh8Glh-0eSVkn27bXXKtyVeQmbtfGA&s') no-repeat center center/cover;color:#0f172a}
+    .container{max-width:980px;margin:36px auto;padding:20px}
+    header{display:flex;align-items:center;gap:16px}
+    .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--green-600),var(--green-400));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:20px;box-shadow: var(--card-shadow)}
+    h1{margin:0;font-size:20px}
+    p.lead{margin:6px 0 18px;color:var(--muted)}
+
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:18px}
+    .card{background:var(--bg);padding:18px;border-radius:14px;box-shadow:var(--card-shadow)}
+
+    .form-row{display:flex;gap:8px;margin-bottom:10px}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    input[type="text"], input[type="number"], select{width:100%;padding:10px;border-radius:8px;border:1px solid #e6eef0;font-size:14px}
+    button{background:var(--green-600);color:white;padding:10px 12px;border-radius:10px;border:0;cursor:pointer;font-weight:600}
+    button.ghost{background:transparent;color:var(--green-600);border:1px solid var(--green-600)}
+
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{padding:8px;text-align:left;border-bottom:1px solid #f1f5f9;font-size:14px}
+    th{font-size:13px;color:var(--muted)}
+
+    .summary{display:flex;flex-direction:column;gap:8px}
+    .big{font-size:28px;font-weight:700;color:var(--green-600)}
+    .muted{color:var(--muted)}
+
+    .small{font-size:13px}
+    .preset-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    .chip{background:var(--green-50);padding:6px 10px;border-radius:999px;border:1px solid #e6f4ea;color:var(--green-600);cursor:pointer}
+
+    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
+
+    @media (max-width:880px){
+      .grid{grid-template-columns:1fr;}
+      .card{padding:14px}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">RC</div>
+      <div>
+        <h1>Recipe Calorie Calculator</h1>
+        <p class="lead">Build a recipe and instantly see calories and macros. White & green theme — jury-ready.</p>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="card">
+        <h2 style="margin-top:0">Create / Edit Recipe</h2>
+
+        <div style="margin-bottom:12px">
+          <label for="recipeName">Recipe name</label>
+          <input id="recipeName" placeholder="Ex: Paneer Butter Masala" />
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:flex-end">
+          <div style="flex:1">
+            <label for="ingredientSelect">Ingredient</label>
+            <input id="ingredientSelect" list="ingredientsList" placeholder="Type or pick from presets" />
+            <datalist id="ingredientsList"></datalist>
+          </div>
+
+          <div style="width:120px">
+            <label for="qty">Quantity</label>
+            <input id="qty" type="number" min="0" value="100" />
+          </div>
+
+          <div style="width:110px">
+            <label for="unit">Unit</label>
+            <select id="unit">
+              <option value="g">g</option>
+              <option value="ml">ml</option>
+              <option value="pcs">pcs</option>
+            </select>
+          </div>
+
+          <div style="width:110px">
+            <label for="addBtn" style="visibility:hidden">add</label>
+            <button id="addBtn">Add</button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <label>Quick presets</label>
+          <div class="preset-list" id="presets"></div>
+        </div>
+
+        <hr style="margin:14px 0;border:none;border-top:1px solid #f1f5f9" />
+
+        <h3 style="margin:0 0 8px 0">Ingredients</h3>
+        <div style="max-height:280px;overflow:auto">
+          <table id="ingredientsTable">
+            <thead>
+              <tr><th>Ingredient</th><th>Qty</th><th>Unit</th><th>Calories</th><th></th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button id="saveRecipe">Save Recipe</button>
+          <button id="clearBtn" class="ghost">Clear</button>
+          <button id="exportBtn" class="ghost">Export JSON</button>
+        </div>
+      </section>
+
+      <aside class="card">
+        <h3 style="margin-top:0">Summary</h3>
+        <div class="summary">
+          <div>
+            <div class="small muted">Total Calories</div>
+            <div class="big" id="totalCals">0 kcal</div>
+          </div>
+
+          <div>
+            <div class="small muted">Per Serving (default 1)</div>
+            <div><input id="servings" type="number" min="1" value="1" style="width:100px;padding:8px;border-radius:8px;border:1px solid #e6eef0"/></div>
+            <div class="small muted" style="margin-top:6px">Calories per serving: <span id="perServing">0 kcal</span></div>
+          </div>
+
+          <div style="margin-top:6px">
+            <div class="small muted">Notes</div>
+            <div class="small" id="notes">You can add custom ingredients and save recipes locally.</div>
+          </div>
+
+          <hr style="margin:10px 0;border:none;border-top:1px solid #f1f5f9" />
+
+          <div style="display:flex;gap:8px;flex-direction:column">
+            <button id="loadSaved" class="ghost">Load Saved Recipes</button>
+            <button id="clearSaved" class="ghost">Clear All Saved</button>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <section style="margin-top:18px" class="card">
+      <h3 style="margin-top:0">Saved Recipes</h3>
+      <div id="savedList" style="min-height:48px;color:var(--muted)"></div>
+    </section>
+
+    <footer>
+      Made with ❤️ — Open-source demo for your sem jury. Customize as needed.
+    </footer>
+  </div>
+
+  <script>
+    // Simple ingredient database (calories per 100g/ml)
+    const DB = {
+      "rice": {kcal:130, protein:2.7, carbs:28, fat:0.3},
+      "wheat flour": {kcal:340, protein:13, carbs:72, fat:2.5},
+      "paneer": {kcal:265, protein:18, carbs:1.2, fat:20},
+      "chicken breast": {kcal:165, protein:31, carbs:0, fat:3.6},
+      "potato": {kcal:77, protein:2, carbs:17, fat:0.1},
+      "onion": {kcal:40, protein:1.1, carbs:9.3, fat:0.1},
+      "tomato": {kcal:18, protein:0.9, carbs:3.9, fat:0.2},
+      "olive oil": {kcal:884, protein:0, carbs:0, fat:100},
+      "butter": {kcal:717, protein:0.9, carbs:0.1, fat:81},
+      "sugar": {kcal:387, protein:0, carbs:100, fat:0},
+      "milk": {kcal:60, protein:3.3, carbs:5, fat:1.5},
+      "egg": {kcal:155, protein:13, carbs:1.1, fat:11},
+      "banana": {kcal:89, protein:1.1, carbs:23, fat:0.3}
+    };
+
+    // State
+    let ingredients = []; // {name, qty, unit, kcal}
+
+    // Elements
+    const ingredientsTableBody = document.querySelector('#ingredientsTable tbody');
+    const ingredientInput = document.getElementById('ingredientSelect');
+    const qtyInput = document.getElementById('qty');
+    const unitSelect = document.getElementById('unit');
+    const addBtn = document.getElementById('addBtn');
+    const totalCalsEl = document.getElementById('totalCals');
+    const servingsEl = document.getElementById('servings');
+    const perServingEl = document.getElementById('perServing');
+    const presetsDiv = document.getElementById('presets');
+    const ingredientsList = document.getElementById('ingredientsList');
+    const recipeNameEl = document.getElementById('recipeName');
+    const savedList = document.getElementById('savedList');
+
+    // populate datalist
+    function populateDatalist(){
+      ingredientsList.innerHTML = '';
+      Object.keys(DB).forEach(k=>{
+        const opt = document.createElement('option'); opt.value = k; ingredientsList.appendChild(opt);
+      })
+    }
+    populateDatalist();
+
+    // presets chips
+    function populatePresets(){
+      presetsDiv.innerHTML='';
+      const keys = ['rice','paneer','chicken breast','potato','tomato','olive oil','butter','egg','milk','banana'];
+      keys.forEach(k=>{
+        const btn = document.createElement('button'); btn.className='chip'; btn.textContent=k; btn.onclick = ()=>{ ingredientInput.value=k; qtyInput.value=100; unitSelect.value='g'; }
+        presetsDiv.appendChild(btn);
+      })
+    }
+    populatePresets();
+
+    function calcKcalFor(name, qty, unit){
+      const key = name.trim().toLowerCase();
+      const entry = DB[key];
+      if(!entry) return null; // unknown
+
+      // assume DB kcal per 100g or 100ml
+      let factor = 1;
+      if(unit === 'g' || unit === 'ml'){
+        factor = qty/100; // per 100g
+      } else if(unit === 'pcs'){
+        // crude heuristic: use typical weights for some items
+        const typical = {egg:50, banana:118, tomato:100, onion:100, potato:150};
+        const w = typical[key] || 100;
+        factor = (qty * w)/100;
+      }
+      return Math.round(entry.kcal * factor * 10)/10;
+    }
+
+    function renderTable(){
+      ingredientsTableBody.innerHTML='';
+      ingredients.forEach((it,idx)=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${it.name}</td><td>${it.qty}</td><td>${it.unit}</td><td>${it.kcal} kcal</td><td><button data-idx='${idx}' class='ghost smallBtn'>Remove</button></td>`;
+        ingredientsTableBody.appendChild(tr);
+      })
+      // attach remove handlers
+      document.querySelectorAll('.smallBtn').forEach(b=>b.addEventListener('click',e=>{
+        const i = +e.target.dataset.idx; ingredients.splice(i,1); updateSummary(); renderTable();
+      }))
+    }
+
+    function updateSummary(){
+      const total = ingredients.reduce((s,it)=>s + (it.kcal||0),0);
+      totalCalsEl.textContent = Math.round(total) + ' kcal';
+      const serv = Math.max(1, Number(servingsEl.value) || 1);
+      perServingEl.textContent = Math.round(total/serv) + ' kcal';
+    }
+
+    addBtn.addEventListener('click', ()=>{
+      const name = ingredientInput.value.trim();
+      const qty = Number(qtyInput.value);
+      const unit = unitSelect.value;
+      if(!name || !qty || qty<=0){ alert('Enter ingredient name and valid quantity'); return; }
+
+      const kcal = calcKcalFor(name, qty, unit);
+      if(kcal === null){
+        // prompt to add custom kcal per 100g
+        const custom = prompt(`I don't have "${name}" in database. Enter calories per 100g (kcal). Leave blank to cancel.`);
+        if(!custom) return;
+        const val = Number(custom);
+        if(isNaN(val)){ alert('Invalid number'); return; }
+        DB[name.toLowerCase()] = {kcal: val, protein:0, carbs:0, fat:0};
+        populateDatalist();
+        const newKcal = calcKcalFor(name, qty, unit);
+        ingredients.push({name, qty, unit, kcal: Math.round(newKcal*10)/10});
+      } else {
+        ingredients.push({name, qty, unit, kcal: Math.round(kcal*10)/10});
+      }
+      ingredientInput.value=''; qtyInput.value = 100; unitSelect.value='g';
+      renderTable(); updateSummary();
+    })
+
+    servingsEl.addEventListener('input', updateSummary);
+
+    document.getElementById('clearBtn').addEventListener('click', ()=>{ if(confirm('Clear current ingredients?')){ ingredients=[]; renderTable(); updateSummary(); } });
+
+    // Save to localStorage
+    document.getElementById('saveRecipe').addEventListener('click', ()=>{
+      const name = (recipeNameEl.value || 'Untitled Recipe').trim();
+      if(ingredients.length===0){ alert('Add at least one ingredient'); return; }
+      const data = {name, ingredients, servings: Number(servingsEl.value)||1, created: new Date().toISOString()};
+      const all = JSON.parse(localStorage.getItem('rc_recipes')||'[]');
+      all.push(data); localStorage.setItem('rc_recipes', JSON.stringify(all));
+      toast('Saved locally'); loadSavedList();
+    })
+
+    document.getElementById('loadSaved').addEventListener('click', loadSavedList);
+
+    function loadSavedList(){
+      const all = JSON.parse(localStorage.getItem('rc_recipes')||'[]');
+      if(all.length===0){ savedList.textContent = 'No saved recipes yet'; return; }
+      savedList.innerHTML = '';
+      all.forEach((r,i)=>{
+        const wrap = document.createElement('div'); wrap.style.display='flex'; wrap.style.justifyContent='space-between'; wrap.style.alignItems='center'; wrap.style.padding='8px 0';
+        const left = document.createElement('div'); left.innerHTML = `<strong>${r.name}</strong><div class='small muted'>${r.ingredients.length} ingredients • saved ${new Date(r.created).toLocaleString()}</div>`;
+        const right = document.createElement('div');
+        const loadBtn = document.createElement('button'); loadBtn.className='ghost'; loadBtn.textContent='Load'; loadBtn.onclick = ()=>{ ingredients = JSON.parse(JSON.stringify(r.ingredients)); recipeNameEl.value = r.name; servingsEl.value = r.servings || 1; renderTable(); updateSummary(); };
+        const delBtn = document.createElement('button'); delBtn.className='ghost'; delBtn.textContent='Delete'; delBtn.onclick = ()=>{ if(confirm('Delete this saved recipe?')){ all.splice(i,1); localStorage.setItem('rc_recipes', JSON.stringify(all)); loadSavedList(); } };
+        right.appendChild(loadBtn); right.appendChild(delBtn);
+        right.style.display='flex'; right.style.gap='8px';
+        wrap.appendChild(left); wrap.appendChild(right); savedList.appendChild(wrap);
+      })
+    }
+
+    document.getElementById('clearSaved').addEventListener('click', ()=>{ if(confirm('Clear all saved recipes?')){ localStorage.removeItem('rc_recipes'); loadSavedList(); } });
+
+    document.getElementById('exportBtn').addEventListener('click', ()=>{
+      const payload = {name: recipeNameEl.value||'Untitled', ingredients, servings: servingsEl.value};
+      const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = (recipeNameEl.value||'recipe') + '.json'; a.click(); URL.revokeObjectURL(url);
+    })
+
+    // small toast
+    function toast(msg){
+      const t = document.createElement('div'); t.textContent = msg; t.style.position='fixed'; t.style.right='18px'; t.style.bottom='18px'; t.style.background='var(--green-600)'; t.style.color='white'; t.style.padding='10px 12px'; t.style.borderRadius='8px'; t.style.boxShadow='var(--card-shadow)'; document.body.appendChild(t);
+      setTimeout(()=>{ t.style.opacity=0; setTimeout(()=>t.remove(),400); },1300);
+    }
+
+    // initial
+    renderTable(); updateSummary(); loadSavedList();
+  </script>
+</body>
+</html>
+
